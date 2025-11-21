@@ -54,6 +54,7 @@ fun OneRepMaxScreen() {
     var selectedRpe by remember { mutableStateOf(10.0) }
     var calculatedMax by remember { mutableStateOf<Double?>(null) }
     var showRpeMenu by remember { mutableStateOf(false) }
+    var customPercentage by remember { mutableStateOf("") }
 
     val rpeValues = OneRepMaxCalculator.getSupportedRpeValues()
 
@@ -228,14 +229,66 @@ fun OneRepMaxScreen() {
             Spacer(modifier = Modifier.height(24.dp))
 
             // Percentage Reference Table
-            Text(
-                text = "Training Percentages",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.fillMaxWidth()
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Training Percentages",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
+
+            // Custom Percentage Input
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = customPercentage,
+                    onValueChange = { customPercentage = it },
+                    label = { Text("Custom %") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.weight(1f)
+                )
+
+                customPercentage.toIntOrNull()?.let { percentage ->
+                    if (percentage in 1..100) {
+                        val customWeight = (max * percentage / 100.0).roundToInt()
+                        Card(
+                            modifier = Modifier.weight(1f),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "$percentage%",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                )
+                                Text(
+                                    text = "$customWeight lbs/kg",
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             val percentages = listOf(95, 90, 85, 80, 75, 70, 65, 60)
             percentages.forEach { percentage ->
