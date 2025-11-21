@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -57,6 +58,7 @@ fun OneRepMaxScreen() {
     var customPercentage by remember { mutableStateOf("") }
 
     val rpeValues = OneRepMaxCalculator.getSupportedRpeValues()
+    val focusManager = LocalFocusManager.current
 
     Column(
         modifier = Modifier
@@ -179,6 +181,7 @@ fun OneRepMaxScreen() {
                 val r = reps.toIntOrNull()
                 if (w != null && r != null) {
                     calculatedMax = OneRepMaxCalculator.calculateOneRepMax(w, r, selectedRpe)
+                    focusManager.clearFocus()
                 }
             },
             modifier = Modifier
