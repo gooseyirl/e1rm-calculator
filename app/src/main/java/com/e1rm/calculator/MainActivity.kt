@@ -113,14 +113,24 @@ fun OneRepMaxScreen() {
         // RPE Dropdown
         ExposedDropdownMenuBox(
             expanded = showRpeMenu,
-            onExpandedChange = { showRpeMenu = !showRpeMenu }
+            onExpandedChange = {
+                focusManager.clearFocus()
+                showRpeMenu = !showRpeMenu
+            }
         ) {
             OutlinedTextField(
                 value = "RPE: $selectedRpe",
                 onValueChange = {},
                 readOnly = true,
+                enabled = false,
                 label = { Text("Rate of Perceived Exertion") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showRpeMenu) },
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .menuAnchor()
