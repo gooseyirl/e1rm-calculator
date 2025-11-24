@@ -25,3 +25,5 @@ build/
 local.properties
 proguard/
 *.log
+/app/release/
+.claude/
