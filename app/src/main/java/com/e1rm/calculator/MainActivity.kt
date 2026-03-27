@@ -4,6 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -28,7 +30,15 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    OneRepMaxScreen()
+                    var currentScreen by remember { mutableStateOf("main") }
+                    when (currentScreen) {
+                        "sets_planner" -> SetsPlannerScreen(
+                            onNavigateBack = { currentScreen = "main" }
+                        )
+                        else -> OneRepMaxScreen(
+                            onNavigateToPlanner = { currentScreen = "sets_planner" }
+                        )
+                    }
                 }
             }
         }
@@ -49,7 +59,7 @@ fun E1RMCalculatorTheme(content: @Composable () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OneRepMaxScreen() {
+fun OneRepMaxScreen(onNavigateToPlanner: () -> Unit = {}) {
     var weight by remember { mutableStateOf("") }
     var reps by remember { mutableStateOf("") }
     var selectedRpe by remember { mutableStateOf(10.0) }
@@ -69,12 +79,24 @@ fun OneRepMaxScreen() {
     ) {
         Spacer(modifier = Modifier.height(32.dp))
 
-        Text(
-            text = "E1RM Calculator",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = "E1RM Calculator",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.align(Alignment.Center)
+            )
+            OutlinedButton(
+                onClick = onNavigateToPlanner,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .height(32.dp),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp)
+            ) {
+                Text("SP", fontSize = 12.sp)
+            }
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
