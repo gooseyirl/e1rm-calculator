@@ -19,6 +19,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 
+data class BackoffConfig(
+    val id: Int,
+    val numSets: String = "3",
+    val reps: String = "",
+    val type: String = "RPE",       // "RPE", "%", "Weight"
+    val rpe: Double = 7.0,
+    val percentReduction: String = "10",
+    val specificWeight: String = ""
+)
+
 data class PlannedSet(
     val reps: Int,
     val weight: Double,
@@ -28,22 +38,17 @@ data class PlannedSet(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
-    var exerciseName by remember { mutableStateOf("") }
     var topSetWeight by remember { mutableStateOf("") }
     var topSetReps by remember { mutableStateOf("") }
     var topSetRpe by remember { mutableStateOf(8.0) }
     var showTopRpeMenu by remember { mutableStateOf(false) }
-    var numBackoffSets by remember { mutableStateOf("3") }
-    var backoffReps by remember { mutableStateOf("") }
-    var reductionType by remember { mutableStateOf("RPE") }
-    var rpeReduction by remember { mutableStateOf(1.0) }
-    var showReductionMenu by remember { mutableStateOf(false) }
-    var percentReduction by remember { mutableStateOf("10") }
+    var backoffConfigs by remember { mutableStateOf(listOf(BackoffConfig(id = 0))) }
+    var openRpeMenuId by remember { mutableStateOf(-1) }
     var plannedSets by remember { mutableStateOf<List<PlannedSet>?>(null) }
     var copied by remember { mutableStateOf(false) }
+    var nextId by remember { mutableStateOf(1) }
 
     val rpeValues = OneRepMaxCalculator.getSupportedRpeValues()
-    val rpeReductionOptions = listOf(0.5, 1.0, 1.5, 2.0, 2.5, 3.0)
     val clipboardManager = LocalClipboardManager.current
     val focusManager = LocalFocusManager.current
 
@@ -66,16 +71,7 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            OutlinedTextField(
-                value = exerciseName,
-                onValueChange = { exerciseName = it },
-                label = { Text("Exercise Name (optional)") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
+            // ── Top Set ──────────────────────────────────────────────────
             Text(
                 text = "Top Set",
                 fontSize = 18.sp,
@@ -96,127 +92,34 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            OutlinedTextField(
-                value = topSetReps,
-                onValueChange = { topSetReps = it },
-                label = { Text("Reps") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            ExposedDropdownMenuBox(
-                expanded = showTopRpeMenu,
-                onExpandedChange = {
-                    focusManager.clearFocus()
-                    showTopRpeMenu = !showTopRpeMenu
-                }
-            ) {
-                OutlinedTextField(
-                    value = "RPE $topSetRpe",
-                    onValueChange = {},
-                    readOnly = true,
-                    enabled = false,
-                    label = { Text("Top Set RPE") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showTopRpeMenu) },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                        disabledBorderColor = MaterialTheme.colorScheme.outline,
-                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor()
-                )
-                ExposedDropdownMenu(
-                    expanded = showTopRpeMenu,
-                    onDismissRequest = { showTopRpeMenu = false }
-                ) {
-                    rpeValues.reversed().forEach { rpe ->
-                        DropdownMenuItem(
-                            text = { Text("RPE $rpe") },
-                            onClick = {
-                                topSetRpe = rpe
-                                showTopRpeMenu = false
-                            }
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "Backoff Sets",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 OutlinedTextField(
-                    value = numBackoffSets,
-                    onValueChange = { if (it.isEmpty() || (it.toIntOrNull() ?: 0) <= 10) numBackoffSets = it },
-                    label = { Text("No. of Sets") },
+                    value = topSetReps,
+                    onValueChange = { topSetReps = it },
+                    label = { Text("Reps") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     modifier = Modifier.weight(1f)
                 )
-                OutlinedTextField(
-                    value = backoffReps,
-                    onValueChange = { backoffReps = it },
-                    label = { Text("Reps (blank = same)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    modifier = Modifier.weight(1f)
-                )
-            }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FilterChip(
-                    selected = reductionType == "RPE",
-                    onClick = { reductionType = "RPE" },
-                    label = { Text("RPE Drop") },
-                    modifier = Modifier.weight(1f)
-                )
-                FilterChip(
-                    selected = reductionType == "%",
-                    onClick = { reductionType = "%" },
-                    label = { Text("% Reduction") },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            if (reductionType == "RPE") {
                 ExposedDropdownMenuBox(
-                    expanded = showReductionMenu,
+                    expanded = showTopRpeMenu,
                     onExpandedChange = {
                         focusManager.clearFocus()
-                        showReductionMenu = !showReductionMenu
-                    }
+                        showTopRpeMenu = !showTopRpeMenu
+                    },
+                    modifier = Modifier.weight(1f)
                 ) {
                     OutlinedTextField(
-                        value = "-$rpeReduction RPE",
+                        value = "RPE $topSetRpe",
                         onValueChange = {},
                         readOnly = true,
                         enabled = false,
-                        label = { Text("RPE Reduction") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showReductionMenu) },
+                        label = { Text("RPE") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showTopRpeMenu) },
                         colors = OutlinedTextFieldDefaults.colors(
                             disabledTextColor = MaterialTheme.colorScheme.onSurface,
                             disabledBorderColor = MaterialTheme.colorScheme.outline,
@@ -228,55 +131,246 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
                             .menuAnchor()
                     )
                     ExposedDropdownMenu(
-                        expanded = showReductionMenu,
-                        onDismissRequest = { showReductionMenu = false }
+                        expanded = showTopRpeMenu,
+                        onDismissRequest = { showTopRpeMenu = false }
                     ) {
-                        rpeReductionOptions.forEach { reduction ->
+                        rpeValues.reversed().forEach { rpe ->
                             DropdownMenuItem(
-                                text = { Text("-$reduction RPE") },
+                                text = { Text("RPE $rpe") },
                                 onClick = {
-                                    rpeReduction = reduction
-                                    showReductionMenu = false
+                                    topSetRpe = rpe
+                                    showTopRpeMenu = false
                                 }
                             )
                         }
                     }
                 }
-            } else {
-                OutlinedTextField(
-                    value = percentReduction,
-                    onValueChange = { percentReduction = it },
-                    label = { Text("% Reduction from Top Set") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
+            // ── Backoff Sets ─────────────────────────────────────────────
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Backoff Sets",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                TextButton(onClick = {
+                    backoffConfigs = backoffConfigs + BackoffConfig(id = nextId)
+                    nextId++
+                }) {
+                    Text("+ Add")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            backoffConfigs.forEachIndexed { index, config ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Backoff ${index + 1}",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 15.sp
+                            )
+                            if (backoffConfigs.size > 1) {
+                                TextButton(
+                                    onClick = {
+                                        backoffConfigs = backoffConfigs.filter { it.id != config.id }
+                                    },
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                                ) {
+                                    Text("Remove", color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = config.numSets,
+                                onValueChange = { v ->
+                                    backoffConfigs = backoffConfigs.map {
+                                        if (it.id == config.id) it.copy(numSets = v) else it
+                                    }
+                                },
+                                label = { Text("Sets") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                singleLine = true,
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = config.reps,
+                                onValueChange = { v ->
+                                    backoffConfigs = backoffConfigs.map {
+                                        if (it.id == config.id) it.copy(reps = v) else it
+                                    }
+                                },
+                                label = { Text("Reps (blank = same)") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                singleLine = true,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Type selector
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            listOf("RPE", "%", "Weight").forEach { type ->
+                                FilterChip(
+                                    selected = config.type == type,
+                                    onClick = {
+                                        backoffConfigs = backoffConfigs.map {
+                                            if (it.id == config.id) it.copy(type = type) else it
+                                        }
+                                    },
+                                    label = { Text(type, fontSize = 13.sp) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        when (config.type) {
+                            "RPE" -> {
+                                val menuOpen = openRpeMenuId == config.id
+                                ExposedDropdownMenuBox(
+                                    expanded = menuOpen,
+                                    onExpandedChange = {
+                                        focusManager.clearFocus()
+                                        openRpeMenuId = if (menuOpen) -1 else config.id
+                                    }
+                                ) {
+                                    OutlinedTextField(
+                                        value = "RPE ${config.rpe}",
+                                        onValueChange = {},
+                                        readOnly = true,
+                                        enabled = false,
+                                        label = { Text("Backoff RPE") },
+                                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = menuOpen) },
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                            disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                        ),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .menuAnchor()
+                                    )
+                                    ExposedDropdownMenu(
+                                        expanded = menuOpen,
+                                        onDismissRequest = { openRpeMenuId = -1 }
+                                    ) {
+                                        rpeValues.reversed().forEach { rpe ->
+                                            DropdownMenuItem(
+                                                text = { Text("RPE $rpe") },
+                                                onClick = {
+                                                    backoffConfigs = backoffConfigs.map {
+                                                        if (it.id == config.id) it.copy(rpe = rpe) else it
+                                                    }
+                                                    openRpeMenuId = -1
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            "%" -> {
+                                OutlinedTextField(
+                                    value = config.percentReduction,
+                                    onValueChange = { v ->
+                                        backoffConfigs = backoffConfigs.map {
+                                            if (it.id == config.id) it.copy(percentReduction = v) else it
+                                        }
+                                    },
+                                    label = { Text("% Reduction from Top Set") },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+
+                            "Weight" -> {
+                                OutlinedTextField(
+                                    value = config.specificWeight,
+                                    onValueChange = { v ->
+                                        backoffConfigs = backoffConfigs.map {
+                                            if (it.id == config.id) it.copy(specificWeight = v) else it
+                                        }
+                                    },
+                                    label = { Text("Specific Weight (lbs/kg)") },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // ── Generate ─────────────────────────────────────────────────
             Button(
                 onClick = {
                     focusManager.clearFocus()
                     val weight = topSetWeight.toDoubleOrNull() ?: return@Button
                     val reps = topSetReps.toIntOrNull() ?: return@Button
-                    val numSets = numBackoffSets.toIntOrNull()?.coerceIn(1, 10) ?: return@Button
-                    val bReps = backoffReps.toIntOrNull() ?: reps
+                    val oneRepMax = OneRepMaxCalculator.calculateOneRepMax(weight, reps, topSetRpe)
 
                     val sets = mutableListOf<PlannedSet>()
                     sets.add(PlannedSet(reps, weight, topSetRpe))
 
-                    if (reductionType == "RPE") {
-                        val oneRepMax = OneRepMaxCalculator.calculateOneRepMax(weight, reps, topSetRpe)
-                            ?: return@Button
-                        val backoffRpe = (topSetRpe - rpeReduction).coerceAtLeast(6.0)
-                        val backoffWeight = OneRepMaxCalculator.calculateWeightForReps(oneRepMax, bReps, backoffRpe)
-                            ?: return@Button
-                        repeat(numSets) { sets.add(PlannedSet(bReps, backoffWeight, backoffRpe)) }
-                    } else {
-                        val reduction = percentReduction.toIntOrNull()?.coerceIn(1, 50) ?: 10
-                        val backoffWeight = weight * (1.0 - reduction / 100.0)
-                        repeat(numSets) { sets.add(PlannedSet(bReps, backoffWeight, null)) }
+                    for (config in backoffConfigs) {
+                        val numSets = config.numSets.toIntOrNull()?.coerceIn(1, 20) ?: continue
+                        val bReps = config.reps.toIntOrNull() ?: reps
+
+                        when (config.type) {
+                            "RPE" -> {
+                                val e1rm = oneRepMax ?: continue
+                                val bWeight = OneRepMaxCalculator.calculateWeightForReps(e1rm, bReps, config.rpe)
+                                    ?: continue
+                                repeat(numSets) { sets.add(PlannedSet(bReps, bWeight, config.rpe)) }
+                            }
+                            "%" -> {
+                                val reduction = config.percentReduction.toIntOrNull()?.coerceIn(1, 99) ?: continue
+                                val bWeight = weight * (1.0 - reduction / 100.0)
+                                repeat(numSets) { sets.add(PlannedSet(bReps, bWeight, null)) }
+                            }
+                            "Weight" -> {
+                                val bWeight = config.specificWeight.toDoubleOrNull() ?: continue
+                                repeat(numSets) { sets.add(PlannedSet(bReps, bWeight, null)) }
+                            }
+                        }
                     }
 
                     plannedSets = sets
@@ -285,11 +379,12 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                enabled = topSetWeight.isNotEmpty() && topSetReps.isNotEmpty() && numBackoffSets.isNotEmpty()
+                enabled = topSetWeight.isNotEmpty() && topSetReps.isNotEmpty()
             ) {
                 Text("Generate Sets", fontSize = 18.sp)
             }
 
+            // ── Results ───────────────────────────────────────────────────
             plannedSets?.let { sets ->
                 Spacer(modifier = Modifier.height(24.dp))
 
@@ -300,18 +395,6 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
                     )
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        if (exerciseName.isNotBlank()) {
-                            Text(
-                                text = exerciseName,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Divider(color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f))
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
-
                         val grouped = groupPlannedSets(sets)
                         grouped.forEachIndexed { index, (count, set) ->
                             val label = if (index == 0) "Top Set" else "Backoff"
@@ -351,7 +434,7 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
 
                 Button(
                     onClick = {
-                        clipboardManager.setText(AnnotatedString(buildCopyText(exerciseName, sets)))
+                        clipboardManager.setText(AnnotatedString(buildCopyText(sets)))
                         copied = true
                     },
                     modifier = Modifier
@@ -391,9 +474,8 @@ private fun groupPlannedSets(sets: List<PlannedSet>): List<Pair<Int, PlannedSet>
     return result
 }
 
-private fun buildCopyText(exerciseName: String, sets: List<PlannedSet>): String {
+private fun buildCopyText(sets: List<PlannedSet>): String {
     val sb = StringBuilder()
-    if (exerciseName.isNotBlank()) sb.appendLine(exerciseName)
     groupPlannedSets(sets).forEach { (count, set) ->
         val rpeStr = set.rpe?.let { " @RPE$it" } ?: ""
         sb.appendLine("${count}x${set.reps} @ ${set.weight.roundToInt()}$rpeStr")
