@@ -150,23 +150,12 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
             Spacer(modifier = Modifier.height(28.dp))
 
             // ── Backoff Sets ─────────────────────────────────────────────
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Backoff Sets",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                TextButton(onClick = {
-                    backoffConfigs = backoffConfigs + BackoffConfig(id = nextId)
-                    nextId++
-                }) {
-                    Text("+ Add")
-                }
-            }
+            Text(
+                text = "Backoff Sets",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.fillMaxWidth()
+            )
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -335,6 +324,16 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
                         }
                     }
                 }
+            }
+
+            OutlinedButton(
+                onClick = {
+                    backoffConfigs = backoffConfigs + BackoffConfig(id = nextId)
+                    nextId++
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("+ Add Backoff")
             }
 
             Spacer(modifier = Modifier.height(8.dp))
