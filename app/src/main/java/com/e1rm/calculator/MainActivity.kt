@@ -3,16 +3,24 @@ package com.e1rm.calculator
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -35,8 +43,12 @@ class MainActivity : ComponentActivity() {
                         "sets_planner" -> SetsPlannerScreen(
                             onNavigateBack = { currentScreen = "main" }
                         )
+                        "settings" -> SettingsScreen(
+                            onNavigateBack = { currentScreen = "main" }
+                        )
                         else -> OneRepMaxScreen(
-                            onNavigateToPlanner = { currentScreen = "sets_planner" }
+                            onNavigateToPlanner = { currentScreen = "sets_planner" },
+                            onNavigateToSettings = { currentScreen = "settings" }
                         )
                     }
                 }
@@ -59,323 +71,370 @@ fun E1RMCalculatorTheme(content: @Composable () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OneRepMaxScreen(onNavigateToPlanner: () -> Unit = {}) {
+fun OneRepMaxScreen(
+    onNavigateToPlanner: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {}
+) {
     var weight by remember { mutableStateOf("") }
     var reps by remember { mutableStateOf("") }
     var selectedRpe by remember { mutableStateOf(10.0) }
     var calculatedMax by remember { mutableStateOf<Double?>(null) }
     var showRpeMenu by remember { mutableStateOf(false) }
     var customPercentage by remember { mutableStateOf("") }
+    var fabExpanded by remember { mutableStateOf(false) }
 
     val rpeValues = OneRepMaxCalculator.getSupportedRpeValues()
     val focusManager = LocalFocusManager.current
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(modifier = Modifier.height(32.dp))
+    Box(modifier = Modifier.fillMaxSize()) {
 
-        Box(modifier = Modifier.fillMaxWidth()) {
+        // Scrollable content
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+
             Text(
                 text = "E1RM Calculator",
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.align(Alignment.Center)
+                color = MaterialTheme.colorScheme.primary
             )
-            OutlinedButton(
-                onClick = onNavigateToPlanner,
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .height(32.dp),
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp)
-            ) {
-                Text("SP", fontSize = 12.sp)
-            }
-        }
 
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-        Text(
-            text = "One Rep Max Estimator",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+            Text(
+                text = "One Rep Max Estimator",
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
-        Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
-        // Weight Input
-        OutlinedTextField(
-            value = weight,
-            onValueChange = { weight = it },
-            label = { Text("Weight (lbs/kg)") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Reps Input
-        OutlinedTextField(
-            value = reps,
-            onValueChange = { reps = it },
-            label = { Text("Reps (1-10)") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // RPE Dropdown
-        ExposedDropdownMenuBox(
-            expanded = showRpeMenu,
-            onExpandedChange = {
-                focusManager.clearFocus()
-                showRpeMenu = !showRpeMenu
-            }
-        ) {
             OutlinedTextField(
-                value = "RPE: $selectedRpe",
-                onValueChange = {},
-                readOnly = true,
-                enabled = false,
-                label = { Text("Rate of Perceived Exertion") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showRpeMenu) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                    disabledBorderColor = MaterialTheme.colorScheme.outline,
-                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor()
+                value = weight,
+                onValueChange = { weight = it },
+                label = { Text("Weight (lbs/kg)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
             )
 
-            ExposedDropdownMenu(
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = reps,
+                onValueChange = { reps = it },
+                label = { Text("Reps (1-10)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            ExposedDropdownMenuBox(
                 expanded = showRpeMenu,
-                onDismissRequest = { showRpeMenu = false }
-            ) {
-                rpeValues.reversed().forEach { rpe ->
-                    DropdownMenuItem(
-                        text = {
-                            Column {
-                                Text(
-                                    text = "RPE $rpe",
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = getRpeDescription(rpe),
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        },
-                        onClick = {
-                            selectedRpe = rpe
-                            showRpeMenu = false
-                        }
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // RPE Info
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer
-            )
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-                Text(
-                    text = "RPE ${selectedRpe}: ${getRpeDescription(selectedRpe)}",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Calculate Button
-        Button(
-            onClick = {
-                val w = weight.toDoubleOrNull()
-                val r = reps.toIntOrNull()
-                if (w != null && r != null) {
-                    calculatedMax = OneRepMaxCalculator.calculateOneRepMax(w, r, selectedRpe)
+                onExpandedChange = {
                     focusManager.clearFocus()
+                    showRpeMenu = !showRpeMenu
                 }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            enabled = weight.isNotEmpty() && reps.isNotEmpty()
-        ) {
-            Text("Calculate 1RM", fontSize = 18.sp)
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Result Display
-        calculatedMax?.let { max ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Estimated 1RM",
-                        fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "${max.roundToInt()}",
-                        fontSize = 48.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "lbs/kg",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Percentage Reference Table
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Training Percentages",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Custom Percentage Input
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
             ) {
                 OutlinedTextField(
-                    value = customPercentage,
-                    onValueChange = { customPercentage = it },
-                    label = { Text("Custom %") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    modifier = Modifier.weight(1f)
+                    value = "RPE: $selectedRpe",
+                    onValueChange = {},
+                    readOnly = true,
+                    enabled = false,
+                    label = { Text("Rate of Perceived Exertion") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showRpeMenu) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                        disabledBorderColor = MaterialTheme.colorScheme.outline,
+                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor()
                 )
-
-                customPercentage.toIntOrNull()?.let { percentage ->
-                    if (percentage in 1..100) {
-                        val customWeight = (max * percentage / 100.0).roundToInt()
-                        Card(
-                            modifier = Modifier.weight(1f),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                            )
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(12.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = "$percentage%",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp
-                                )
-                                Text(
-                                    text = "$customWeight lbs/kg",
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 18.sp
-                                )
+                ExposedDropdownMenu(
+                    expanded = showRpeMenu,
+                    onDismissRequest = { showRpeMenu = false }
+                ) {
+                    rpeValues.reversed().forEach { rpe ->
+                        DropdownMenuItem(
+                            text = {
+                                Column {
+                                    Text(text = "RPE $rpe", fontWeight = FontWeight.Bold)
+                                    Text(
+                                        text = getRpeDescription(rpe),
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            },
+                            onClick = {
+                                selectedRpe = rpe
+                                showRpeMenu = false
                             }
-                        }
+                        )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            val percentages = listOf(95, 90, 85, 80, 75, 70, 65, 60)
-            percentages.forEach { percentage ->
-                val calculatedWeight = (max * percentage / 100.0).roundToInt()
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
                     Text(
-                        text = "$percentage%",
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = "$calculatedWeight lbs/kg",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
+                        text = "RPE ${selectedRpe}: ${getRpeDescription(selectedRpe)}",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                 }
-                Divider()
             }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Button(
+                onClick = {
+                    val w = weight.toDoubleOrNull()
+                    val r = reps.toIntOrNull()
+                    if (w != null && r != null) {
+                        calculatedMax = OneRepMaxCalculator.calculateOneRepMax(w, r, selectedRpe)
+                        focusManager.clearFocus()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                enabled = weight.isNotEmpty() && reps.isNotEmpty()
+            ) {
+                Text("Calculate 1RM", fontSize = 18.sp)
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            calculatedMax?.let { max ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Estimated 1RM",
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "${max.roundToInt()}",
+                            fontSize = 48.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "lbs/kg",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "Training Percentages", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = customPercentage,
+                        onValueChange = { customPercentage = it },
+                        label = { Text("Custom %") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                    customPercentage.toIntOrNull()?.let { percentage ->
+                        if (percentage in 1..100) {
+                            val customWeight = (max * percentage / 100.0).roundToInt()
+                            Card(
+                                modifier = Modifier.weight(1f),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(12.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(text = "$percentage%", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                    Text(
+                                        text = "$customWeight lbs/kg",
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 18.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                val percentages = listOf(95, 90, 85, 80, 75, 70, 65, 60)
+                percentages.forEach { percentage ->
+                    val calculatedWeight = (max * percentage / 100.0).roundToInt()
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(text = "$percentage%", fontWeight = FontWeight.Medium)
+                        Text(
+                            text = "$calculatedWeight lbs/kg",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Divider()
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(text = "About This Calculator", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "This calculator uses RPE (Rate of Perceived Exertion) based formulas " +
+                                "similar to the Barbell Medicine approach. Enter the weight you lifted, " +
+                                "the number of reps (1-10), and your RPE to get an accurate 1RM estimate.",
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Justify,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Extra space so content doesn't hide behind FAB
+            Spacer(modifier = Modifier.height(88.dp))
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Info Section
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
+        // Scrim — closes FAB when tapping outside
+        if (fabExpanded) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.28f))
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { fabExpanded = false }
             )
+        }
+
+        // Speed dial FAB
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            AnimatedVisibility(
+                visible = fabExpanded,
+                enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
+                exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 })
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SpeedDialItem(label = "Sets Planner") {
+                        fabExpanded = false
+                        onNavigateToPlanner()
+                    }
+                    SpeedDialItem(label = "Settings") {
+                        fabExpanded = false
+                        onNavigateToSettings()
+                    }
+                }
+            }
+
+            FloatingActionButton(
+                onClick = { fabExpanded = !fabExpanded },
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
                 Text(
-                    text = "About This Calculator",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "This calculator uses RPE (Rate of Perceived Exertion) based formulas " +
-                            "similar to the Barbell Medicine approach. Enter the weight you lifted, " +
-                            "the number of reps (1-10), and your RPE to get an accurate 1RM estimate.",
+                    text = "SP",
                     fontSize = 14.sp,
-                    textAlign = TextAlign.Justify,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary
                 )
             }
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(24.dp))
+@Composable
+private fun SpeedDialItem(label: String, onClick: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Surface(
+            shape = RoundedCornerShape(6.dp),
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = 4.dp,
+            onClick = onClick
+        ) {
+            Text(
+                text = label,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+        SmallFloatingActionButton(
+            onClick = onClick,
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        ) {
+            Text(
+                text = label.first().toString(),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
     }
 }
 
