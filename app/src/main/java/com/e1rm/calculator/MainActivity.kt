@@ -3,6 +3,9 @@ package com.e1rm.calculator
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -394,11 +397,10 @@ fun OneRepMaxScreen(
                 onClick = { fabExpanded = !fabExpanded },
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
-                Text(
-                    text = "SP",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimary
+                Icon(
+                    imageVector = if (fabExpanded) Icons.Filled.Close else Icons.Filled.Menu,
+                    contentDescription = if (fabExpanded) "Close menu" else "Open menu",
+                    tint = MaterialTheme.colorScheme.onPrimary
                 )
             }
         }
