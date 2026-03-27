@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import kotlinx.coroutines.launch
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -15,25 +16,19 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.math.roundToInt
-
-private fun roundTo2_5(weight: Double): Double = (weight / 2.5).roundToInt() * 2.5
-
-private fun formatWeight(weight: Double): String {
-    val rounded = roundTo2_5(weight)
-    return if (rounded % 1.0 == 0.0) rounded.toInt().toString() else "%.1f".format(rounded)
-}
 
 data class BackoffConfig(
     val id: Int,
-    val numSets: String = "3",
+    val numSets: String = "1",
     val reps: String = "",
     val type: String = "RPE",       // "RPE", "%", "Weight"
     val rpe: Double = 7.0,
     val percentReduction: String = "10",
+    val percentIsIncrease: Boolean = false,
     val specificWeight: String = ""
 )
 
@@ -45,7 +40,7 @@ data class PlannedSet(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
+fun SetsPlannerScreen(units: String = "kg", rounding: String = "default_0_5", onNavigateBack: () -> Unit) {
     var topSetWeight by remember { mutableStateOf("") }
     var topSetReps by remember { mutableStateOf("") }
     var topSetRpe by remember { mutableStateOf(8.0) }
@@ -59,13 +54,21 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
     val rpeValues = OneRepMaxCalculator.getSupportedRpeValues()
     val clipboardManager = LocalClipboardManager.current
     val focusManager = LocalFocusManager.current
+    val scrollState = rememberScrollState()
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(plannedSets) {
+        if (plannedSets != null) {
+            scrollState.animateScrollTo(scrollState.maxValue)
+        }
+    }
 
     BackHandler { onNavigateBack() }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Sets Planner") },
+                title = {},
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
@@ -79,10 +82,25 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 24.dp)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Sets Planner",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Plan your sets",
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
 
             // ── Top Set ──────────────────────────────────────────────────
             Text(
@@ -97,7 +115,7 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
             OutlinedTextField(
                 value = topSetWeight,
                 onValueChange = { topSetWeight = it },
-                label = { Text("Weight (lbs/kg)") },
+                label = { Text("Weight ($units)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
@@ -244,14 +262,25 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             listOf("RPE", "%", "Weight").forEach { type ->
+                                val chipLabel = when {
+                                    type == "%" && config.type == "%" ->
+                                        if (config.percentIsIncrease) "% +" else "% -"
+                                    type == "%" -> "% -"
+                                    else -> type
+                                }
                                 FilterChip(
                                     selected = config.type == type,
                                     onClick = {
                                         backoffConfigs = backoffConfigs.map {
-                                            if (it.id == config.id) it.copy(type = type) else it
+                                            if (it.id == config.id) {
+                                                if (it.type == "%" && type == "%")
+                                                    it.copy(percentIsIncrease = !it.percentIsIncrease)
+                                                else
+                                                    it.copy(type = type, percentIsIncrease = false)
+                                            } else it
                                         }
                                     },
-                                    label = { Text(type, fontSize = 13.sp) },
+                                    label = { Text(chipLabel, fontSize = 13.sp) },
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -313,7 +342,7 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
                                             if (it.id == config.id) it.copy(percentReduction = v) else it
                                         }
                                     },
-                                    label = { Text("% Reduction from Top Set") },
+                                    label = { Text(if (config.percentIsIncrease) "% Increase per Set" else "% Reduction per Set") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth()
@@ -328,7 +357,7 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
                                             if (it.id == config.id) it.copy(specificWeight = v) else it
                                         }
                                     },
-                                    label = { Text("Specific Weight (lbs/kg)") },
+                                    label = { Text("Specific Weight ($units)") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth()
@@ -341,7 +370,12 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
 
             OutlinedButton(
                 onClick = {
-                    backoffConfigs = backoffConfigs + BackoffConfig(id = nextId)
+                    val last = backoffConfigs.last()
+                    backoffConfigs = backoffConfigs + BackoffConfig(
+                        id = nextId,
+                        numSets = last.numSets,
+                        reps = last.reps
+                    )
                     nextId++
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -374,8 +408,9 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
                                 repeat(numSets) { sets.add(PlannedSet(bReps, bWeight, config.rpe)) }
                             }
                             "%" -> {
-                                val reduction = config.percentReduction.toIntOrNull()?.coerceIn(1, 99) ?: continue
-                                val bWeight = weight * (1.0 - reduction / 100.0)
+                                val pct = config.percentReduction.toIntOrNull()?.coerceIn(1, 99) ?: continue
+                                val factor = if (config.percentIsIncrease) 1.0 + pct / 100.0 else 1.0 - pct / 100.0
+                                val bWeight = sets.last().weight * factor
                                 repeat(numSets) { sets.add(PlannedSet(bReps, bWeight, null)) }
                             }
                             "Weight" -> {
@@ -407,32 +442,34 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
                     )
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        val grouped = groupPlannedSets(sets)
+                        val grouped = groupPlannedSets(sets, rounding)
                         grouped.forEachIndexed { index, (count, set) ->
                             val label = if (index == 0) "Set 1" else "Set ${index + 1}"
-                            val rpeStr = set.rpe?.let { "  @RPE $it" } ?: ""
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 6.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
                                     text = label,
                                     fontSize = 13.sp,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
-                                    modifier = Modifier.width(60.dp)
+                                    modifier = Modifier.weight(1f)
                                 )
                                 Text(
                                     text = "${count}×${set.reps}",
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.weight(1f),
+                                    textAlign = TextAlign.Center
                                 )
                                 Text(
-                                    text = "${formatWeight(set.weight)}$rpeStr",
+                                    text = "${formatWeight(set.weight, rounding)} $units",
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    fontWeight = if (index == 0) FontWeight.Bold else FontWeight.Normal
+                                    fontWeight = if (index == 0) FontWeight.Bold else FontWeight.Normal,
+                                    modifier = Modifier.weight(1f),
+                                    textAlign = TextAlign.End
                                 )
                             }
                             if (index < grouped.size - 1) {
@@ -446,7 +483,7 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
 
                 Button(
                     onClick = {
-                        clipboardManager.setText(AnnotatedString(buildCopyText(sets)))
+                        clipboardManager.setText(AnnotatedString(buildCopyText(sets, units, rounding)))
                         copied = true
                     },
                     modifier = Modifier
@@ -465,7 +502,7 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
     }
 }
 
-private fun groupPlannedSets(sets: List<PlannedSet>): List<Pair<Int, PlannedSet>> {
+private fun groupPlannedSets(sets: List<PlannedSet>, rounding: String): List<Pair<Int, PlannedSet>> {
     if (sets.isEmpty()) return emptyList()
     val result = mutableListOf<Pair<Int, PlannedSet>>()
     var count = 1
@@ -473,7 +510,7 @@ private fun groupPlannedSets(sets: List<PlannedSet>): List<Pair<Int, PlannedSet>
         val curr = sets[i]
         val prev = sets[i - 1]
         if (curr.reps == prev.reps &&
-            roundTo2_5(curr.weight) == roundTo2_5(prev.weight) &&
+            roundWeight(curr.weight, rounding) == roundWeight(prev.weight, rounding) &&
             curr.rpe == prev.rpe
         ) {
             count++
@@ -486,10 +523,10 @@ private fun groupPlannedSets(sets: List<PlannedSet>): List<Pair<Int, PlannedSet>
     return result
 }
 
-private fun buildCopyText(sets: List<PlannedSet>): String {
+private fun buildCopyText(sets: List<PlannedSet>, units: String, rounding: String): String {
     val sb = StringBuilder()
-    groupPlannedSets(sets).forEach { (count, set) ->
-        sb.appendLine("$count x ${set.reps} @ ${formatWeight(set.weight)}")
+    groupPlannedSets(sets, rounding).forEach { (count, set) ->
+        sb.appendLine("$count x ${set.reps} @ ${formatWeight(set.weight, rounding)}$units")
     }
     return sb.toString().trimEnd()
 }

@@ -1,5 +1,6 @@
 package com.e1rm.calculator
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -31,12 +32,29 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.roundToInt
+
+fun roundWeight(weight: Double, rounding: String): Double {
+    val inc = if (rounding.endsWith("2_5")) 2.5 else 0.5
+    return when {
+        rounding.startsWith("up")      -> ceil(weight / inc) * inc
+        rounding.startsWith("down")    -> floor(weight / inc) * inc
+        else /* "default" */           -> (weight / inc).roundToInt() * inc
+    }
+}
+
+fun formatWeight(weight: Double, rounding: String): String {
+    val rounded = roundWeight(weight, rounding)
+    return if (rounded % 1.0 == 0.0) rounded.toInt().toString() else "%.1f".format(rounded)
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val prefs = getSharedPreferences("e1rm_prefs", Context.MODE_PRIVATE)
         setContent {
             E1RMCalculatorTheme {
                 Surface(
@@ -44,14 +62,32 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     var currentScreen by remember { mutableStateOf("main") }
+                    var units by remember { mutableStateOf(prefs.getString("units", "kg") ?: "kg") }
+                    var rounding by remember { mutableStateOf(prefs.getString("rounding", "default_0_5") ?: "default_0_5") }
+                    val onUnitsChanged: (String) -> Unit = { selected ->
+                        units = selected
+                        prefs.edit().putString("units", selected).apply()
+                    }
+                    val onRoundingChanged: (String) -> Unit = { selected ->
+                        rounding = selected
+                        prefs.edit().putString("rounding", selected).apply()
+                    }
                     when (currentScreen) {
                         "sets_planner" -> SetsPlannerScreen(
+                            units = units,
+                            rounding = rounding,
                             onNavigateBack = { currentScreen = "main" }
                         )
                         "settings" -> SettingsScreen(
+                            units = units,
+                            rounding = rounding,
+                            onUnitsChanged = onUnitsChanged,
+                            onRoundingChanged = onRoundingChanged,
                             onNavigateBack = { currentScreen = "main" }
                         )
                         else -> OneRepMaxScreen(
+                            units = units,
+                            rounding = rounding,
                             onNavigateToPlanner = { currentScreen = "sets_planner" },
                             onNavigateToSettings = { currentScreen = "settings" }
                         )
@@ -77,6 +113,8 @@ fun E1RMCalculatorTheme(content: @Composable () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OneRepMaxScreen(
+    units: String = "kg",
+    rounding: String = "default_0_5",
     onNavigateToPlanner: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {}
 ) {
@@ -124,7 +162,7 @@ fun OneRepMaxScreen(
             OutlinedTextField(
                 value = weight,
                 onValueChange = { weight = it },
-                label = { Text("Weight (lbs/kg)") },
+                label = { Text("Weight ($units)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
@@ -246,14 +284,14 @@ fun OneRepMaxScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "${max.roundToInt()}",
+                            text = formatWeight(max, rounding),
                             fontSize = 48.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "lbs/kg",
+                            text = units,
                             fontSize = 14.sp,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -287,7 +325,7 @@ fun OneRepMaxScreen(
                     )
                     customPercentage.toIntOrNull()?.let { percentage ->
                         if (percentage in 1..100) {
-                            val customWeight = (max * percentage / 100.0).roundToInt()
+                            val customWeight = formatWeight(max * percentage / 100.0, rounding)
                             Card(
                                 modifier = Modifier.weight(1f),
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
@@ -298,7 +336,7 @@ fun OneRepMaxScreen(
                                 ) {
                                     Text(text = "$percentage%", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                                     Text(
-                                        text = "$customWeight lbs/kg",
+                                        text = "$customWeight $units",
                                         color = MaterialTheme.colorScheme.primary,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 18.sp
@@ -313,7 +351,7 @@ fun OneRepMaxScreen(
 
                 val percentages = listOf(95, 90, 85, 80, 75, 70, 65, 60)
                 percentages.forEach { percentage ->
-                    val calculatedWeight = (max * percentage / 100.0).roundToInt()
+                    val calculatedWeight = formatWeight(max * percentage / 100.0, rounding)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -322,7 +360,7 @@ fun OneRepMaxScreen(
                     ) {
                         Text(text = "$percentage%", fontWeight = FontWeight.Medium)
                         Text(
-                            text = "$calculatedWeight lbs/kg",
+                            text = "$calculatedWeight $units",
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold
                         )
@@ -413,34 +451,18 @@ fun OneRepMaxScreen(
 
 @Composable
 private fun SpeedDialItem(label: String, onClick: () -> Unit) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    Surface(
+        shape = RoundedCornerShape(6.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 4.dp,
+        onClick = onClick
     ) {
-        Surface(
-            shape = RoundedCornerShape(6.dp),
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 4.dp,
-            onClick = onClick
-        ) {
-            Text(
-                text = label,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium
-            )
-        }
-        SmallFloatingActionButton(
-            onClick = onClick,
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-        ) {
-            Text(
-                text = label.first().toString(),
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSecondaryContainer
-            )
-        }
+        Text(
+            text = label,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 

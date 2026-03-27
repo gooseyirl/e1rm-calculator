@@ -7,8 +7,10 @@ An Android application that calculates your estimated one-rep max (1RM) for weig
 - **RPE-Based Calculations**: Uses Rate of Perceived Exertion (RPE 6.0-10.0) for accurate 1RM estimates
 - **Support for 1-10 Reps**: Calculate your 1RM based on any rep range from 1 to 10
 - **Training Percentages**: Automatically displays training weights at various percentages (60%-95%)
+- **Custom Percentage Calculator**: Enter any percentage to instantly see the corresponding working weight
+- **Sets Planner**: Plan your full session — set a top set then build additional sets using RPE targets, percentage reductions/increases, or specific weights. Output is grouped and copyable to clipboard
+- **Settings**: Configure units (kg/lbs) and weight rounding (increment: 2.5 or 0.5; direction: default, always up, always down)
 - **Clean Material Design UI**: Modern Jetpack Compose interface following Material Design 3
-- **Real-time Calculations**: Instant results as you input your data
 
 ## How It Works
 
@@ -30,6 +32,17 @@ To estimate your one-rep max. This method is more accurate than traditional form
 - **RPE 7**: Could definitely do 3 more reps
 - **RPE 6.5**: Could do 3-4 more reps
 - **RPE 6**: Could definitely do 4 more reps
+
+### Sets Planner
+
+Access via the floating action button (bottom-right) → Sets Planner.
+
+1. Enter your **top set** (weight, reps, RPE)
+2. Add **additional sets** — choose from three types:
+   - **RPE**: target a specific RPE and rep count (weight calculated from your 1RM)
+   - **%**: reduce or increase by a percentage relative to the previous set
+   - **Weight**: specify an exact weight
+3. Tap **Generate** to see all planned sets, then **Copy to Clipboard** to share
 
 ## Building the App
 
@@ -58,18 +71,19 @@ The APK will be located at: `app/build/outputs/apk/debug/app-debug.apk`
 
 ## Usage
 
-1. Enter the **weight** you lifted (in lbs or kg)
+1. Enter the **weight** you lifted
 2. Enter the **number of reps** you performed (1-10)
 3. Select your **RPE** from the dropdown (how hard it felt)
 4. Tap **Calculate 1RM**
 5. View your estimated 1RM and training percentages
+6. Use the **FAB** (bottom-right) to open the Sets Planner or Settings
 
 ## Technical Details
 
 - **Language**: Kotlin
 - **UI Framework**: Jetpack Compose
 - **Minimum SDK**: API 24 (Android 7.0)
-- **Target SDK**: API 34 (Android 14)
+- **Target SDK**: API 35 (Android 15)
 
 ## Formula Reference
 
