@@ -10,6 +10,7 @@ An Android application that calculates your estimated one-rep max (1RM) for weig
 - **Custom Percentage Calculator**: Enter any percentage to instantly see the corresponding working weight
 - **Sets Planner**: Plan your full session — set a top set then build additional sets using RPE targets, percentage reductions/increases, or specific weights. Output is grouped and copyable to clipboard
 - **Settings**: Configure units (kg/lbs) and weight rounding (increment: 2.5 or 0.5; direction: default, always up, always down)
+- **Support Developer**: Optional one-time in-app purchase via Google Play. Removes the option from the menu and shows a permanent star + motivational quote on the main screen
 - **Clean Material Design UI**: Modern Jetpack Compose interface following Material Design 3
 
 ## How It Works

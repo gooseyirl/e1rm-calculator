@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -55,6 +56,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val prefs = getSharedPreferences("e1rm_prefs", Context.MODE_PRIVATE)
+        var onDonatedCallback: (() -> Unit)? = null
+        val billingManager = BillingManager(this) { onDonatedCallback?.invoke() }
+        billingManager.connect()
         setContent {
             E1RMCalculatorTheme {
                 Surface(
@@ -62,6 +66,8 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     var currentScreen by remember { mutableStateOf("main") }
+                    var isDonated by remember { mutableStateOf(BillingManager.isDonated(this@MainActivity)) }
+                    onDonatedCallback = { isDonated = true }
                     var units by remember { mutableStateOf(prefs.getString("units", "kg") ?: "kg") }
                     var rounding by remember { mutableStateOf(prefs.getString("rounding", "default_0_5") ?: "default_0_5") }
                     val onUnitsChanged: (String) -> Unit = { selected ->
@@ -88,6 +94,8 @@ class MainActivity : ComponentActivity() {
                         else -> OneRepMaxScreen(
                             units = units,
                             rounding = rounding,
+                            isDonated = isDonated,
+                            onSupportDeveloper = { billingManager.launchPurchaseFlow() },
                             onNavigateToPlanner = { currentScreen = "sets_planner" },
                             onNavigateToSettings = { currentScreen = "settings" }
                         )
@@ -115,6 +123,8 @@ fun E1RMCalculatorTheme(content: @Composable () -> Unit) {
 fun OneRepMaxScreen(
     units: String = "kg",
     rounding: String = "default_0_5",
+    isDonated: Boolean = false,
+    onSupportDeveloper: () -> Unit = {},
     onNavigateToPlanner: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {}
 ) {
@@ -406,6 +416,32 @@ fun OneRepMaxScreen(
             )
         }
 
+        // Supporter star + quote
+        if (isDonated) {
+            val quote = remember { motivationalQuotes.random() }
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .navigationBarsPadding()
+                    .padding(start = 16.dp, bottom = 16.dp, end = 80.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Star,
+                    contentDescription = "Supporter",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = quote,
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 14.sp
+                )
+            }
+        }
+
         // Speed dial FAB
         Column(
             modifier = Modifier
@@ -432,6 +468,22 @@ fun OneRepMaxScreen(
                         fabExpanded = false
                         onNavigateToSettings()
                     }
+                    if (!isDonated) {
+                        SpeedDialItem(
+                            label = "Support Developer",
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Filled.Star,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
+                        ) {
+                            fabExpanded = false
+                            onSupportDeveloper()
+                        }
+                    }
                 }
             }
 
@@ -450,19 +502,25 @@ fun OneRepMaxScreen(
 }
 
 @Composable
-private fun SpeedDialItem(label: String, onClick: () -> Unit) {
+private fun SpeedDialItem(label: String, leadingIcon: (@Composable () -> Unit)? = null, onClick: () -> Unit) {
     Surface(
         shape = RoundedCornerShape(6.dp),
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 4.dp,
         onClick = onClick
     ) {
-        Text(
-            text = label,
+        Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium
-        )
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            leadingIcon?.invoke()
+            Text(
+                text = label,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }
 

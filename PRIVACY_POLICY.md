@@ -21,15 +21,19 @@ The Application does not collect, store, or transmit any personal information or
 
 ### Data Stored Locally on Your Device
 
-The Application saves your preferences (units of measurement and weight rounding settings) to your device's local storage using Android SharedPreferences. This data:
+The Application saves your preferences (units of measurement and weight rounding settings) and your purchase status (whether you have supported the developer) to your device's local storage using Android SharedPreferences. This data:
 - Never leaves your device
 - Is not transmitted to any server
 - Is not accessible to the Service Provider or any third party
 - Can be cleared at any time by uninstalling the Application
 
+## In-App Purchases
+
+The Application offers an optional one-time in-app purchase ("Support Developer") processed entirely through Google Play. The Service Provider does not collect, store, or process any payment or billing information. All payment data is handled exclusively by Google in accordance with their Privacy Policy. The Application only receives confirmation of whether the purchase was completed.
+
 ## Third Party Access
 
-The Application does not use any third-party services that may collect information used to identify you.
+The Application uses Google Play Billing solely to process the optional in-app purchase. No other third-party services are used. Google Play's handling of payment data is governed by Google's Privacy Policy.
 
 ## Children's Privacy
 
@@ -63,8 +67,8 @@ If you have any questions or suggestions about this Privacy Policy, please conta
 - Does NOT collect any personal data
 - Does NOT track your usage
 - Does NOT share any information with third parties
-- Does NOT transmit any data over the internet
-- Stores only your app preferences (units, rounding) locally on your device
+- Does NOT process payment data (handled entirely by Google Play)
+- Stores only your app preferences (units, rounding) and purchase status locally on your device
 - Performs all calculations locally on your device
 
 Your privacy is important to us. This app is designed to be completely private and secure.

@@ -46,6 +46,9 @@ Calculate your estimated one-rep max (1RM) with precision using the RPE (Rate of
 • Complete Privacy
   No data collection, no tracking, no analytics. All calculations happen locally on your device. Your training data stays private.
 
+• Support the Developer (Optional)
+  Enjoy the app? There's an optional one-time in-app purchase to support development. No subscription, no pressure — just a way to say thanks if you find it useful.
+
 📊 HOW IT WORKS
 
 The RPE method is more accurate than traditional formulas (like Epley or Brzycki) because it considers how difficult the set felt:
@@ -77,10 +80,10 @@ RPE 6: Could do 4 more reps
 🔒 YOUR PRIVACY MATTERS
 
 • Zero data collection
-• No internet connection required
+• No internet connection required for calculations
 • No ads or tracking
 • All calculations done locally
-• Your information never leaves your device
+• Optional one-time in-app purchase to support the developer — payment handled securely by Google Play
 
 📱 SIMPLE & EFFECTIVE
 
