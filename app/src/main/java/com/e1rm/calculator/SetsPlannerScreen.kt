@@ -73,7 +73,7 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
 
             // ── Top Set ──────────────────────────────────────────────────
             Text(
-                text = "Top Set",
+                text = "First Set",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.fillMaxWidth()
@@ -151,7 +151,7 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
 
             // ── Backoff Sets ─────────────────────────────────────────────
             Text(
-                text = "Backoff Sets",
+                text = "Additional Sets",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.fillMaxWidth()
@@ -175,7 +175,7 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Backoff ${index + 1}",
+                                text = "Set ${index + 2}",
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 15.sp
                             )
@@ -261,7 +261,7 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
                                         onValueChange = {},
                                         readOnly = true,
                                         enabled = false,
-                                        label = { Text("Backoff RPE") },
+                                        label = { Text("RPE") },
                                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = menuOpen) },
                                         colors = OutlinedTextFieldDefaults.colors(
                                             disabledTextColor = MaterialTheme.colorScheme.onSurface,
@@ -333,7 +333,7 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("+ Add Backoff")
+                Text("+ Add Set")
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -396,7 +396,7 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         val grouped = groupPlannedSets(sets)
                         grouped.forEachIndexed { index, (count, set) ->
-                            val label = if (index == 0) "Top Set" else "Backoff"
+                            val label = if (index == 0) "Set 1" else "Set ${index + 1}"
                             val rpeStr = set.rpe?.let { "  @RPE $it" } ?: ""
                             Row(
                                 modifier = Modifier
