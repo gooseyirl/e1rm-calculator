@@ -23,7 +23,11 @@ class BillingManager(
         private const val PREFS_NAME = "e1rm_prefs"
         private const val PREF_DONATED = "donated"
 
+        // Set to true to simulate a completed donation for UI testing
+        const val DEBUG_FORCE_DONATED = false
+
         fun isDonated(context: Context): Boolean {
+            if (DEBUG_FORCE_DONATED) return true
             return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 .getBoolean(PREF_DONATED, false)
         }
@@ -47,6 +51,21 @@ class BillingManager(
     }
 
     fun launchPurchaseFlow() {
+        if (!billingClient.isReady) {
+            billingClient.startConnection(object : BillingClientStateListener {
+                override fun onBillingSetupFinished(result: BillingResult) {
+                    if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+                        queryAndLaunch()
+                    }
+                }
+                override fun onBillingServiceDisconnected() {}
+            })
+        } else {
+            queryAndLaunch()
+        }
+    }
+
+    private fun queryAndLaunch() {
         val params = QueryProductDetailsParams.newBuilder()
             .setProductList(listOf(
                 QueryProductDetailsParams.Product.newBuilder()
@@ -66,7 +85,9 @@ class BillingManager(
                             .build()
                     ))
                     .build()
-                billingClient.launchBillingFlow(activity, flowParams)
+                activity.runOnUiThread {
+                    billingClient.launchBillingFlow(activity, flowParams)
+                }
             }
         }
     }

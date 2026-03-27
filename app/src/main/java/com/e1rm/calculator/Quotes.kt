@@ -1,5 +1,25 @@
 package com.e1rm.calculator
 
+import android.content.SharedPreferences
+
+fun getNextQuote(prefs: SharedPreferences): String {
+    val key = "quote_remaining"
+    val stored = prefs.getString(key, "")
+
+    val remaining = if (stored.isNullOrEmpty()) {
+        motivationalQuotes.indices.toMutableList()
+    } else {
+        stored.split(",").mapNotNull { it.trim().toIntOrNull() }.toMutableList()
+    }
+
+    val index = remaining.random()
+    remaining.remove(index)
+
+    prefs.edit().putString(key, remaining.joinToString(",")).apply()
+
+    return motivationalQuotes[index]
+}
+
 val motivationalQuotes = listOf(
     "Sweat is your body's way of showing progress.",
     "Pain is temporary, but pride is forever.",

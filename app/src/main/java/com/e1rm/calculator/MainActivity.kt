@@ -56,6 +56,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val prefs = getSharedPreferences("e1rm_prefs", Context.MODE_PRIVATE)
+        val dailyQuote = getNextQuote(prefs)
         var onDonatedCallback: (() -> Unit)? = null
         val billingManager = BillingManager(this) { onDonatedCallback?.invoke() }
         billingManager.connect()
@@ -95,6 +96,7 @@ class MainActivity : ComponentActivity() {
                             units = units,
                             rounding = rounding,
                             isDonated = isDonated,
+                            quote = dailyQuote,
                             onSupportDeveloper = { billingManager.launchPurchaseFlow() },
                             onNavigateToPlanner = { currentScreen = "sets_planner" },
                             onNavigateToSettings = { currentScreen = "settings" }
@@ -124,6 +126,7 @@ fun OneRepMaxScreen(
     units: String = "kg",
     rounding: String = "default_0_5",
     isDonated: Boolean = false,
+    quote: String = "",
     onSupportDeveloper: () -> Unit = {},
     onNavigateToPlanner: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {}
@@ -141,10 +144,12 @@ fun OneRepMaxScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
 
+        Column(modifier = Modifier.fillMaxSize()) {
+
         // Scrollable content
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .weight(1f)
                 .statusBarsPadding()
                 .padding(24.dp)
                 .verticalScroll(rememberScrollState()),
@@ -400,7 +405,7 @@ fun OneRepMaxScreen(
             }
 
             // Extra space so content doesn't hide behind FAB
-            Spacer(modifier = Modifier.height(88.dp))
+            Spacer(modifier = Modifier.height(72.dp))
         }
 
         // Scrim — closes FAB when tapping outside
@@ -416,12 +421,10 @@ fun OneRepMaxScreen(
             )
         }
 
-        // Supporter star + quote
+        // Supporter star + quote footer
         if (isDonated) {
-            val quote = remember { motivationalQuotes.random() }
             Row(
                 modifier = Modifier
-                    .align(Alignment.BottomStart)
                     .navigationBarsPadding()
                     .padding(start = 16.dp, bottom = 16.dp, end = 80.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -441,6 +444,8 @@ fun OneRepMaxScreen(
                 )
             }
         }
+
+        } // end outer Column
 
         // Speed dial FAB
         Column(

@@ -74,6 +74,12 @@ fun SettingsScreen(
 
             // ── Rounding increment ───────────────────────────────────────
             Text("Rounding Increment", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "The nearest value all calculated weights are rounded to",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             Spacer(modifier = Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 listOf("2.5", "0.5").forEach { option ->
