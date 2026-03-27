@@ -19,6 +19,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 
+private fun roundTo2_5(weight: Double): Double = (weight / 2.5).roundToInt() * 2.5
+
+private fun formatWeight(weight: Double): String {
+    val rounded = roundTo2_5(weight)
+    return if (rounded % 1.0 == 0.0) rounded.toInt().toString() else "%.1f".format(rounded)
+}
+
 data class BackoffConfig(
     val id: Int,
     val numSets: String = "3",
@@ -417,7 +424,7 @@ fun SetsPlannerScreen(onNavigateBack: () -> Unit) {
                                     color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                                 Text(
-                                    text = "${set.weight.roundToInt()}$rpeStr",
+                                    text = "${formatWeight(set.weight)}$rpeStr",
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     fontWeight = if (index == 0) FontWeight.Bold else FontWeight.Normal
                                 )
@@ -460,7 +467,7 @@ private fun groupPlannedSets(sets: List<PlannedSet>): List<Pair<Int, PlannedSet>
         val curr = sets[i]
         val prev = sets[i - 1]
         if (curr.reps == prev.reps &&
-            curr.weight.roundToInt() == prev.weight.roundToInt() &&
+            roundTo2_5(curr.weight) == roundTo2_5(prev.weight) &&
             curr.rpe == prev.rpe
         ) {
             count++
@@ -476,7 +483,7 @@ private fun groupPlannedSets(sets: List<PlannedSet>): List<Pair<Int, PlannedSet>
 private fun buildCopyText(sets: List<PlannedSet>): String {
     val sb = StringBuilder()
     groupPlannedSets(sets).forEach { (count, set) ->
-        sb.appendLine("$count x ${set.reps} @ ${set.weight.roundToInt()}")
+        sb.appendLine("$count x ${set.reps} @ ${formatWeight(set.weight)}")
     }
     return sb.toString().trimEnd()
 }
