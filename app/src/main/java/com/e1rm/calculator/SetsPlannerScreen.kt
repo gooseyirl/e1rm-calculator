@@ -477,8 +477,7 @@ private fun groupPlannedSets(sets: List<PlannedSet>): List<Pair<Int, PlannedSet>
 private fun buildCopyText(sets: List<PlannedSet>): String {
     val sb = StringBuilder()
     groupPlannedSets(sets).forEach { (count, set) ->
-        val rpeStr = set.rpe?.let { " @RPE$it" } ?: ""
-        sb.appendLine("${count}x${set.reps} @ ${set.weight.roundToInt()}$rpeStr")
+        sb.appendLine("$count x ${set.reps} @ ${set.weight.roundToInt()}")
     }
     return sb.toString().trimEnd()
 }
