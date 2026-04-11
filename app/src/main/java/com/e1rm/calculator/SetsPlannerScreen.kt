@@ -454,6 +454,8 @@ fun SetsPlannerScreen(
 
             // ── Results ───────────────────────────────────────────────────
             plannedSets?.let { sets ->
+                Spacer(modifier = Modifier.height(24.dp))
+
                 // Rounding toggle — only visible once sets have been generated
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -485,7 +487,6 @@ fun SetsPlannerScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Card(
