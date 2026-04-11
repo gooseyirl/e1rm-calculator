@@ -67,6 +67,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     var currentScreen by remember { mutableStateOf("main") }
+                    var lastE1rm by remember { mutableStateOf<Double?>(null) }
                     var isDonated by remember { mutableStateOf(BillingManager.isDonated(this@MainActivity)) }
                     onDonatedCallback = { isDonated = true }
                     var units by remember { mutableStateOf(prefs.getString("units", "kg") ?: "kg") }
@@ -83,6 +84,7 @@ class MainActivity : ComponentActivity() {
                         "sets_planner" -> SetsPlannerScreen(
                             units = units,
                             rounding = rounding,
+                            initialE1rm = lastE1rm,
                             onNavigateBack = { currentScreen = "main" }
                         )
                         "settings" -> SettingsScreen(
@@ -98,7 +100,10 @@ class MainActivity : ComponentActivity() {
                             isDonated = isDonated,
                             quote = dailyQuote,
                             onSupportDeveloper = { billingManager.launchPurchaseFlow() },
-                            onNavigateToPlanner = { currentScreen = "sets_planner" },
+                            onNavigateToPlanner = { e1rm ->
+                                lastE1rm = e1rm
+                                currentScreen = "sets_planner"
+                            },
                             onNavigateToSettings = { currentScreen = "settings" }
                         )
                     }
@@ -128,7 +133,7 @@ fun OneRepMaxScreen(
     isDonated: Boolean = false,
     quote: String = "",
     onSupportDeveloper: () -> Unit = {},
-    onNavigateToPlanner: () -> Unit = {},
+    onNavigateToPlanner: (Double?) -> Unit = {},
     onNavigateToSettings: () -> Unit = {}
 ) {
     var weight by remember { mutableStateOf("") }
@@ -467,7 +472,7 @@ fun OneRepMaxScreen(
                 ) {
                     SpeedDialItem(label = "Sets Planner") {
                         fabExpanded = false
-                        onNavigateToPlanner()
+                        onNavigateToPlanner(calculatedMax)
                     }
                     SpeedDialItem(label = "Settings") {
                         fabExpanded = false

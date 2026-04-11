@@ -48,9 +48,14 @@ data class PlannedSet(
 fun SetsPlannerScreen(
     units: String = "kg",
     rounding: String = "default_0_5",
+    initialE1rm: Double? = null,
     onNavigateBack: () -> Unit
 ) {
-    var e1rmInput by remember { mutableStateOf("") }
+    var e1rmInput by remember {
+        mutableStateOf(
+            if (initialE1rm != null) formatWeight(initialE1rm, rounding) else ""
+        )
+    }
     var sets by remember { mutableStateOf(listOf(SetConfig(id = 0))) }
     var nextId by remember { mutableStateOf(1) }
     var openRpeMenuId by remember { mutableStateOf(-1) }
