@@ -67,7 +67,12 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     var currentScreen by remember { mutableStateOf("main") }
-                    var lastE1rm by remember { mutableStateOf<Double?>(null) }
+                    // Hoisted so values survive navigation to settings / sets planner and back
+                    var calcWeight by remember { mutableStateOf("") }
+                    var calcReps by remember { mutableStateOf("") }
+                    var calcRpe by remember { mutableStateOf(10.0) }
+                    var calcMax by remember { mutableStateOf<Double?>(null) }
+                    var calcCustomPct by remember { mutableStateOf("") }
                     var isDonated by remember { mutableStateOf(BillingManager.isDonated(this@MainActivity)) }
                     onDonatedCallback = { isDonated = true }
                     var units by remember { mutableStateOf(prefs.getString("units", "kg") ?: "kg") }
@@ -84,7 +89,7 @@ class MainActivity : ComponentActivity() {
                         "sets_planner" -> SetsPlannerScreen(
                             units = units,
                             rounding = rounding,
-                            initialE1rm = lastE1rm,
+                            initialE1rm = calcMax,
                             onNavigateBack = { currentScreen = "main" }
                         )
                         "settings" -> SettingsScreen(
@@ -99,11 +104,18 @@ class MainActivity : ComponentActivity() {
                             rounding = rounding,
                             isDonated = isDonated,
                             quote = dailyQuote,
+                            weight = calcWeight,
+                            reps = calcReps,
+                            selectedRpe = calcRpe,
+                            calculatedMax = calcMax,
+                            customPercentage = calcCustomPct,
+                            onWeightChanged = { calcWeight = it },
+                            onRepsChanged = { calcReps = it },
+                            onRpeChanged = { calcRpe = it },
+                            onCalculatedMaxChanged = { calcMax = it },
+                            onCustomPercentageChanged = { calcCustomPct = it },
                             onSupportDeveloper = { billingManager.launchPurchaseFlow() },
-                            onNavigateToPlanner = { e1rm ->
-                                lastE1rm = e1rm
-                                currentScreen = "sets_planner"
-                            },
+                            onNavigateToPlanner = { currentScreen = "sets_planner" },
                             onNavigateToSettings = { currentScreen = "settings" }
                         )
                     }
@@ -132,16 +144,21 @@ fun OneRepMaxScreen(
     rounding: String = "default_0_5",
     isDonated: Boolean = false,
     quote: String = "",
+    weight: String = "",
+    reps: String = "",
+    selectedRpe: Double = 10.0,
+    calculatedMax: Double? = null,
+    customPercentage: String = "",
+    onWeightChanged: (String) -> Unit = {},
+    onRepsChanged: (String) -> Unit = {},
+    onRpeChanged: (Double) -> Unit = {},
+    onCalculatedMaxChanged: (Double?) -> Unit = {},
+    onCustomPercentageChanged: (String) -> Unit = {},
     onSupportDeveloper: () -> Unit = {},
-    onNavigateToPlanner: (Double?) -> Unit = {},
+    onNavigateToPlanner: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {}
 ) {
-    var weight by remember { mutableStateOf("") }
-    var reps by remember { mutableStateOf("") }
-    var selectedRpe by remember { mutableStateOf(10.0) }
-    var calculatedMax by remember { mutableStateOf<Double?>(null) }
     var showRpeMenu by remember { mutableStateOf(false) }
-    var customPercentage by remember { mutableStateOf("") }
     var fabExpanded by remember { mutableStateOf(false) }
 
     val rpeValues = OneRepMaxCalculator.getSupportedRpeValues()
@@ -181,7 +198,7 @@ fun OneRepMaxScreen(
 
             OutlinedTextField(
                 value = weight,
-                onValueChange = { weight = it },
+                onValueChange = { onWeightChanged(it) },
                 label = { Text("Weight ($units)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 singleLine = true,
@@ -192,7 +209,7 @@ fun OneRepMaxScreen(
 
             OutlinedTextField(
                 value = reps,
-                onValueChange = { reps = it },
+                onValueChange = { onRepsChanged(it) },
                 label = { Text("Reps (1-10)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
@@ -242,7 +259,7 @@ fun OneRepMaxScreen(
                                 }
                             },
                             onClick = {
-                                selectedRpe = rpe
+                                onRpeChanged(rpe)
                                 showRpeMenu = false
                             }
                         )
@@ -272,7 +289,7 @@ fun OneRepMaxScreen(
                     val w = weight.toDoubleOrNull()
                     val r = reps.toIntOrNull()
                     if (w != null && r != null) {
-                        calculatedMax = OneRepMaxCalculator.calculateOneRepMax(w, r, selectedRpe)
+                        onCalculatedMaxChanged(OneRepMaxCalculator.calculateOneRepMax(w, r, selectedRpe))
                         focusManager.clearFocus()
                     }
                 },
@@ -337,7 +354,7 @@ fun OneRepMaxScreen(
                 ) {
                     OutlinedTextField(
                         value = customPercentage,
-                        onValueChange = { customPercentage = it },
+                        onValueChange = { onCustomPercentageChanged(it) },
                         label = { Text("Custom %") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
@@ -472,7 +489,7 @@ fun OneRepMaxScreen(
                 ) {
                     SpeedDialItem(label = "Sets Planner") {
                         fabExpanded = false
-                        onNavigateToPlanner(calculatedMax)
+                        onNavigateToPlanner()
                     }
                     SpeedDialItem(label = "Settings") {
                         fabExpanded = false
