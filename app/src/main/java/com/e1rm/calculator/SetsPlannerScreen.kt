@@ -437,39 +437,6 @@ fun SetsPlannerScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ── Rounding toggle ───────────────────────────────────────────
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "Rounding",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f)
-                )
-                listOf("0.5", "2.5").forEach { inc ->
-                    val isSelected = if (inc == "2.5") localRounding.endsWith("2_5")
-                                     else !localRounding.endsWith("2_5")
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = {
-                            if (!isSelected) {
-                                localRounding = if (inc == "2.5")
-                                    localRounding.replace("0_5", "2_5")
-                                else
-                                    localRounding.replace("2_5", "0_5")
-                                if (plannedSets != null) doGenerate()
-                            }
-                        },
-                        label = { Text("$inc $units") }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
             // ── Generate ──────────────────────────────────────────────────
             Button(
                 onClick = { doGenerate() },
@@ -487,6 +454,38 @@ fun SetsPlannerScreen(
 
             // ── Results ───────────────────────────────────────────────────
             plannedSets?.let { sets ->
+                // Rounding toggle — only visible once sets have been generated
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Rounding",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+                    listOf("0.5", "2.5").forEach { inc ->
+                        val isSelected = if (inc == "2.5") localRounding.endsWith("2_5")
+                                         else !localRounding.endsWith("2_5")
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = {
+                                if (!isSelected) {
+                                    localRounding = if (inc == "2.5")
+                                        localRounding.replace("0_5", "2_5")
+                                    else
+                                        localRounding.replace("2_5", "0_5")
+                                    doGenerate()
+                                }
+                            },
+                            label = { Text("$inc $units") }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Card(
