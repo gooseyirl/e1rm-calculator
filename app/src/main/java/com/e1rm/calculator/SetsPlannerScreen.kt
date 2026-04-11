@@ -39,8 +39,7 @@ data class SetConfig(
 
 data class PlannedSet(
     val reps: Int,
-    val weight: Double,
-    val rpe: Double?
+    val weight: Double
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,6 +61,8 @@ fun SetsPlannerScreen(
     var plannedSets by remember { mutableStateOf<List<PlannedSet>?>(null) }
     var generateError by remember { mutableStateOf<String?>(null) }
     var copied by remember { mutableStateOf(false) }
+    // Local rounding that can be toggled without leaving the screen
+    var localRounding by remember { mutableStateOf(rounding) }
 
     val rpeValues = OneRepMaxCalculator.getSupportedRpeValues()
     val clipboardManager = LocalClipboardManager.current
@@ -73,6 +74,62 @@ fun SetsPlannerScreen(
         if (plannedSets != null) {
             scrollState.animateScrollTo(scrollState.maxValue)
         }
+    }
+
+    // Extracted generate logic — called from the button and from the rounding toggle
+    fun doGenerate() {
+        focusManager.clearFocus()
+        generateError = null
+
+        val e1rm = e1rmInput.toDoubleOrNull()
+        val result = mutableListOf<PlannedSet>()
+        var lastWeight: Double? = null
+
+        for ((index, config) in sets.withIndex()) {
+            val reps = config.reps.toIntOrNull()
+            if (reps == null || reps <= 0) {
+                generateError = "Set ${index + 1}: enter a valid rep count"
+                return
+            }
+            val numSets = config.numSets.toIntOrNull()?.coerceAtLeast(1) ?: 1
+
+            val weight: Double = when (config.type) {
+                "RPE" -> {
+                    if (e1rm == null) { generateError = "Enter an E1RM to use RPE sets"; return }
+                    OneRepMaxCalculator.calculateWeightForReps(e1rm, reps, config.rpe)
+                        ?: run { generateError = "Set ${index + 1}: reps/RPE combination not in table"; return }
+                }
+                "%1RM" -> {
+                    if (e1rm == null) { generateError = "Enter an E1RM to use % 1RM sets"; return }
+                    val pct = config.percentE1rm.toDoubleOrNull() ?: run {
+                        generateError = "Set ${index + 1}: enter a valid percentage"; return
+                    }
+                    e1rm * (pct / 100.0)
+                }
+                "%last" -> {
+                    if (lastWeight == null) {
+                        generateError = "Set ${index + 1}: no previous set to reference"; return
+                    }
+                    val delta = config.percentDelta.toDoubleOrNull() ?: run {
+                        generateError = "Set ${index + 1}: enter a valid percentage"; return
+                    }
+                    if (config.percentIsIncrease) lastWeight!! * (1 + delta / 100.0)
+                    else lastWeight!! * (1 - delta / 100.0)
+                }
+                else -> { // "Weight"
+                    config.specificWeight.toDoubleOrNull() ?: run {
+                        generateError = "Set ${index + 1}: enter a valid weight"; return
+                    }
+                }
+            }
+
+            val rounded = roundWeight(weight, localRounding)
+            repeat(numSets) { result.add(PlannedSet(reps = reps, weight = rounded)) }
+            lastWeight = rounded
+        }
+
+        plannedSets = result
+        copied = false
     }
 
     BackHandler { onNavigateBack() }
@@ -114,7 +171,7 @@ fun SetsPlannerScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // ── E1RM ─────────────────────────────────────────���────────────
+            // ── E1RM ──────────────────────────────────────────────────────
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -178,7 +235,6 @@ fun SetsPlannerScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
 
-                        // Header row
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -200,7 +256,6 @@ fun SetsPlannerScreen(
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        // Sets × Reps
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -231,8 +286,6 @@ fun SetsPlannerScreen(
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        // Type chips: RPE | % 1RM | % last | Weight
-                        // Tapping the selected "% last" chip toggles increase/decrease
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -266,7 +319,6 @@ fun SetsPlannerScreen(
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        // Type-specific input
                         when (config.type) {
                             "RPE" -> {
                                 val menuOpen = openRpeMenuId == config.id
@@ -385,78 +437,42 @@ fun SetsPlannerScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // ── Rounding toggle ───────────────────────────────────────────
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Rounding",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
+                )
+                listOf("0.5", "2.5").forEach { inc ->
+                    val isSelected = if (inc == "2.5") localRounding.endsWith("2_5")
+                                     else !localRounding.endsWith("2_5")
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = {
+                            if (!isSelected) {
+                                localRounding = if (inc == "2.5")
+                                    localRounding.replace("0_5", "2_5")
+                                else
+                                    localRounding.replace("2_5", "0_5")
+                                if (plannedSets != null) doGenerate()
+                            }
+                        },
+                        label = { Text("$inc $units") }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             // ── Generate ──────────────────────────────────────────────────
             Button(
-                onClick = {
-                    focusManager.clearFocus()
-                    generateError = null
-
-                    val e1rm = e1rmInput.toDoubleOrNull()
-                    val result = mutableListOf<PlannedSet>()
-                    var lastWeight: Double? = null
-
-                    for ((index, config) in sets.withIndex()) {
-                        val reps = config.reps.toIntOrNull()
-                        if (reps == null || reps <= 0) {
-                            generateError = "Set ${index + 1}: enter a valid rep count"
-                            return@Button
-                        }
-                        val numSets = config.numSets.toIntOrNull()?.coerceAtLeast(1) ?: 1
-
-                        val weight: Double = when (config.type) {
-                            "RPE" -> {
-                                if (e1rm == null) {
-                                    generateError = "Enter an E1RM to use RPE sets"
-                                    return@Button
-                                }
-                                OneRepMaxCalculator.calculateWeightForReps(e1rm, reps, config.rpe)
-                                    ?: run {
-                                        generateError = "Set ${index + 1}: reps/RPE combination not in table"
-                                        return@Button
-                                    }
-                            }
-                            "%1RM" -> {
-                                if (e1rm == null) {
-                                    generateError = "Enter an E1RM to use % 1RM sets"
-                                    return@Button
-                                }
-                                val pct = config.percentE1rm.toDoubleOrNull() ?: run {
-                                    generateError = "Set ${index + 1}: enter a valid percentage"
-                                    return@Button
-                                }
-                                e1rm * (pct / 100.0)
-                            }
-                            "%last" -> {
-                                if (lastWeight == null) {
-                                    generateError = "Set ${index + 1}: no previous set to reference"
-                                    return@Button
-                                }
-                                val delta = config.percentDelta.toDoubleOrNull() ?: run {
-                                    generateError = "Set ${index + 1}: enter a valid percentage"
-                                    return@Button
-                                }
-                                if (config.percentIsIncrease) lastWeight!! * (1 + delta / 100.0)
-                                else lastWeight!! * (1 - delta / 100.0)
-                            }
-                            else -> { // "Weight"
-                                config.specificWeight.toDoubleOrNull() ?: run {
-                                    generateError = "Set ${index + 1}: enter a valid weight"
-                                    return@Button
-                                }
-                            }
-                        }
-
-                        val rounded = roundWeight(weight, rounding)
-                        val rpeValue = if (config.type == "RPE") config.rpe else null
-                        repeat(numSets) {
-                            result.add(PlannedSet(reps = reps, weight = rounded, rpe = rpeValue))
-                        }
-                        lastWeight = rounded
-                    }
-
-                    plannedSets = result
-                    copied = false
-                },
+                onClick = { doGenerate() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
@@ -480,7 +496,7 @@ fun SetsPlannerScreen(
                     )
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        val grouped = groupPlannedSets(sets, rounding)
+                        val grouped = groupPlannedSets(sets, localRounding)
                         grouped.forEachIndexed { index, (count, set) ->
                             Row(
                                 modifier = Modifier
@@ -492,32 +508,22 @@ fun SetsPlannerScreen(
                                     text = "Set ${index + 1}",
                                     fontSize = 13.sp,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
-                                    modifier = Modifier.weight(0.8f)
+                                    modifier = Modifier.weight(1f)
                                 )
                                 Text(
                                     text = "${count}×${set.reps}",
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.weight(0.8f),
+                                    modifier = Modifier.weight(1f),
                                     textAlign = TextAlign.Center
                                 )
-                                Column(
-                                    modifier = Modifier.weight(1.4f),
-                                    horizontalAlignment = Alignment.End
-                                ) {
-                                    Text(
-                                        text = "${formatWeight(set.weight, rounding)} $units",
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                    if (set.rpe != null) {
-                                        Text(
-                                            text = "RPE ${set.rpe}",
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.65f),
-                                            fontSize = 12.sp
-                                        )
-                                    }
-                                }
+                                Text(
+                                    text = "${formatWeight(set.weight, localRounding)} $units",
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.weight(1f),
+                                    textAlign = TextAlign.End
+                                )
                             }
                             if (index < grouped.size - 1) {
                                 Divider(
@@ -532,7 +538,7 @@ fun SetsPlannerScreen(
 
                 Button(
                     onClick = {
-                        clipboardManager.setText(AnnotatedString(buildCopyText(sets, units, rounding)))
+                        clipboardManager.setText(AnnotatedString(buildCopyText(sets, units, localRounding)))
                         copied = true
                     },
                     modifier = Modifier
@@ -559,8 +565,7 @@ private fun groupPlannedSets(sets: List<PlannedSet>, rounding: String): List<Pai
         val curr = sets[i]
         val prev = sets[i - 1]
         if (curr.reps == prev.reps &&
-            roundWeight(curr.weight, rounding) == roundWeight(prev.weight, rounding) &&
-            curr.rpe == prev.rpe
+            roundWeight(curr.weight, rounding) == roundWeight(prev.weight, rounding)
         ) {
             count++
         } else {
@@ -575,8 +580,7 @@ private fun groupPlannedSets(sets: List<PlannedSet>, rounding: String): List<Pai
 private fun buildCopyText(sets: List<PlannedSet>, units: String, rounding: String): String {
     val sb = StringBuilder()
     groupPlannedSets(sets, rounding).forEach { (count, set) ->
-        val rpeStr = if (set.rpe != null) " @ RPE ${set.rpe}" else ""
-        sb.appendLine("$count x ${set.reps} @ ${formatWeight(set.weight, rounding)}$units$rpeStr")
+        sb.appendLine("$count x ${set.reps} @ ${formatWeight(set.weight, rounding)}$units")
     }
     return sb.toString().trimEnd()
 }
