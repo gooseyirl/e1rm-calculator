@@ -1,7 +1,10 @@
 package com.e1rm.calculator
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -42,7 +45,7 @@ data class PlannedSet(
     val weight: Double
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun SetsPlannerScreen(
     units: String = "kg",
@@ -57,6 +60,7 @@ fun SetsPlannerScreen(
     }
     var sets by remember { mutableStateOf(listOf(SetConfig(id = 0))) }
     var nextId by remember { mutableStateOf(1) }
+    var scrollToSetId by remember { mutableStateOf<Int?>(null) }
     var openRpeMenuId by remember { mutableStateOf(-1) }
     var plannedSets by remember { mutableStateOf<List<PlannedSet>?>(null) }
     var generateError by remember { mutableStateOf<String?>(null) }
@@ -226,10 +230,19 @@ fun SetsPlannerScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             sets.forEachIndexed { index, config ->
+                key(config.id) {
+                val bringIntoViewRequester = remember { BringIntoViewRequester() }
+                LaunchedEffect(scrollToSetId) {
+                    if (scrollToSetId == config.id) {
+                        bringIntoViewRequester.bringIntoView()
+                        scrollToSetId = null
+                    }
+                }
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 12.dp),
+                        .padding(bottom = 12.dp)
+                        .bringIntoViewRequester(bringIntoViewRequester),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
                     )
@@ -424,16 +437,16 @@ fun SetsPlannerScreen(
                         }
                     }
                 }
+                } // key
             }
 
             OutlinedButton(
                 onClick = {
                     val last = sets.last()
-                    sets = sets + last.copy(id = nextId)
+                    val newId = nextId
+                    sets = sets + last.copy(id = newId)
                     nextId++
-                    coroutineScope.launch {
-                        scrollState.animateScrollTo(scrollState.maxValue)
-                    }
+                    scrollToSetId = newId
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
