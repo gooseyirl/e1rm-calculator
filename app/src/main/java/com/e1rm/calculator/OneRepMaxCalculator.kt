@@ -30,7 +30,11 @@ object OneRepMaxCalculator {
         // RPE 6.5 (3.5 RIR)
         6.5 to mapOf(1 to 87.8, 2 to 85.0, 3 to 82.4, 4 to 79.9, 5 to 77.4, 6 to 75.1, 7 to 72.9, 8 to 70.7, 9 to 68.6, 10 to 66.6),
         // RPE 6 (4 RIR)
-        6.0 to mapOf(1 to 86.3, 2 to 83.7, 3 to 81.1, 4 to 78.6, 5 to 76.2, 6 to 74.0, 7 to 71.8, 8 to 69.7, 9 to 67.6, 10 to 65.6)
+        6.0 to mapOf(1 to 86.3, 2 to 83.7, 3 to 81.1, 4 to 78.6, 5 to 76.2, 6 to 74.0, 7 to 71.8, 8 to 69.7, 9 to 67.6, 10 to 65.6),
+        // RPE 5.5 (4.5 RIR)
+        5.5 to mapOf(1 to 84.8, 2 to 82.4, 3 to 79.8, 4 to 77.3, 5 to 75.0, 6 to 72.9, 7 to 70.7, 8 to 68.7, 9 to 66.6, 10 to 64.6),
+        // RPE 5 (5 RIR)
+        5.0 to mapOf(1 to 83.3, 2 to 81.1, 3 to 78.5, 4 to 76.0, 5 to 73.8, 6 to 71.8, 7 to 69.6, 8 to 67.7, 9 to 65.6, 10 to 63.6)
     )
 
     /**
@@ -45,7 +49,7 @@ object OneRepMaxCalculator {
         // Validate inputs
         if (weight <= 0) return null
         if (reps < 1 || reps > 10) return null
-        if (rpe < 6.0 || rpe > 10.0) return null
+        if (rpe < 5.0 || rpe > 10.0) return null
 
         // Get the percentage from the RPE table
         val percentageOfMax = rpePercentageTable[rpe]?.get(reps) ?: return null
@@ -64,7 +68,7 @@ object OneRepMaxCalculator {
      */
     fun calculateRepsAtWeight(oneRepMax: Double, weight: Double, rpe: Double): Int? {
         if (oneRepMax <= 0 || weight <= 0 || weight > oneRepMax) return null
-        if (rpe < 6.0 || rpe > 10.0) return null
+        if (rpe < 5.0 || rpe > 10.0) return null
 
         val percentageOfMax = (weight / oneRepMax) * 100.0
         val rpeRow = rpePercentageTable[rpe] ?: return null
@@ -102,7 +106,7 @@ object OneRepMaxCalculator {
     fun calculateWeightForReps(oneRepMax: Double, reps: Int, rpe: Double): Double? {
         if (oneRepMax <= 0) return null
         if (reps < 1 || reps > 10) return null
-        if (rpe < 6.0 || rpe > 10.0) return null
+        if (rpe < 5.0 || rpe > 10.0) return null
 
         val percentageOfMax = rpePercentageTable[rpe]?.get(reps) ?: return null
         return oneRepMax * (percentageOfMax / 100.0)
