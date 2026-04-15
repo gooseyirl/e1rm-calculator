@@ -1,0 +1,88 @@
+================================================================================
+E1RM CALCULATOR - APP STORE METADATA
+================================================================================
+
+APP NAME (30 characters max):
+E1RM Calculator - RPE Based
+
+SUBTITLE (30 characters max):
+One Rep Max Estimator
+
+--------------------------------------------------------------------------------
+DESCRIPTION (4000 characters max):
+--------------------------------------------------------------------------------
+E1RM Calculator is your essential tool for estimating your One Rep Max using the scientifically-backed RPE (Rate of Perceived Exertion) method.
+
+Whether you're a powerlifter, bodybuilder, or fitness enthusiast, knowing your estimated 1RM helps you program your training more effectively and track your strength progress over time.
+
+KEY FEATURES:
+
+• RPE-Based Calculations
+Uses proven methodology based on Mike Tuchscherer's RPE chart and Barbell Medicine research. Simply enter your weight lifted, reps performed, and RPE level to get an accurate 1RM estimate.
+
+• Training Percentages Table
+Instantly see calculated weights at common training percentages (95%, 90%, 85%, 80%, 75%, 70%, 65%, 60%) to help you plan your workout sets.
+
+• Custom Percentage Calculator
+Need a specific percentage? Enter any value from 1-100% to calculate the exact weight for your programming needs.
+
+• Privacy First
+No account required. No data collection. All calculations happen on your device. Your training data stays yours.
+
+• Clean, Native Design
+Built with SwiftUI for a smooth, responsive experience that follows iOS design guidelines.
+
+HOW RPE WORKS:
+
+RPE (Rate of Perceived Exertion) measures how many reps you had "left in the tank" after a set:
+- RPE 10: Maximum effort, no reps left
+- RPE 9: Could have done 1 more rep
+- RPE 8: Could have done 2 more reps
+- And so on...
+
+This method accounts for daily performance variations, making it more accurate than traditional percentage-based calculations alone.
+
+PERFECT FOR:
+- Strength athletes and powerlifters
+- Bodybuilders tracking progressive overload
+- Coaches programming for clients
+- Anyone wanting to train smarter
+
+Download E1RM Calculator today and take the guesswork out of your strength training!
+
+--------------------------------------------------------------------------------
+KEYWORDS (100 characters max, comma-separated):
+--------------------------------------------------------------------------------
+1rm,one rep max,rpe,calculator,strength,weightlifting,powerlifting,gym,fitness,barbell,training
+
+--------------------------------------------------------------------------------
+PROMOTIONAL TEXT (170 characters max - can be updated without new app version):
+--------------------------------------------------------------------------------
+Calculate your One Rep Max instantly using RPE methodology. Perfect for planning your training cycles and tracking strength progress!
+
+--------------------------------------------------------------------------------
+WHAT'S NEW (Release Notes for version 1.0):
+--------------------------------------------------------------------------------
+Initial release of E1RM Calculator featuring:
+• RPE-based one rep max estimation
+• Training percentages table
+• Custom percentage calculator
+• Privacy-focused design
+
+--------------------------------------------------------------------------------
+CATEGORY:
+--------------------------------------------------------------------------------
+Primary: Health & Fitness
+Secondary: Utilities
+
+--------------------------------------------------------------------------------
+AGE RATING:
+--------------------------------------------------------------------------------
+4+ (No objectionable content)
+
+--------------------------------------------------------------------------------
+COPYRIGHT:
+--------------------------------------------------------------------------------
+© 2026 GooseCo
+
+================================================================================

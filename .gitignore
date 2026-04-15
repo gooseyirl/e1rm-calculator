@@ -1,12 +1,7 @@
+# Android
 *.iml
-.gradle
-/local.properties
+.gradle/
 .idea/
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
 local.properties
 *.apk
 *.ap_
@@ -15,10 +10,22 @@ local.properties
 bin/
 gen/
 out/
-.gradle/
 build/
-local.properties
+.externalNativeBuild
+.cxx
 proguard/
+/captures
+android/app/release/
+
+# iOS
+ios/*.xcworkspace
+ios/DerivedData/
+ios/*.xcuserstate
+ios/xcuserdata/
+ios/E1RMCalculator.xcodeproj/xcuserdata/
+ios/E1RMCalculator.xcodeproj/project.xcworkspace/xcuserdata/
+
+# General
 *.log
-/app/release/
+.DS_Store
 .claude/

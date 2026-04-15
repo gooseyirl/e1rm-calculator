@@ -1,0 +1,43 @@
+PRIVACY POLICY FOR E1RM CALCULATOR
+==================================
+Last updated: [DATE]
+
+OVERVIEW
+--------
+E1RM Calculator ("the App") is designed with your privacy as a priority. This privacy policy explains how we handle information when you use our app.
+
+INFORMATION WE COLLECT
+----------------------
+We do not collect any personal information.
+
+The App performs all calculations locally on your device. We do not:
+- Collect or store your workout data
+- Require account creation or login
+- Track your usage or behavior
+- Use analytics or tracking services
+- Share any data with third parties
+
+DATA STORAGE
+------------
+All data you enter into the App (weights, reps, RPE values) exists only temporarily in your device's memory while the app is running. This data is not saved, stored, or transmitted anywhere. When you close the app, this information is cleared.
+
+THIRD-PARTY SERVICES
+--------------------
+The App does not integrate with any third-party services, analytics platforms, or advertising networks.
+
+CHILDREN'S PRIVACY
+------------------
+The App does not collect information from anyone, including children under the age of 13.
+
+CHANGES TO THIS POLICY
+----------------------
+We may update this privacy policy from time to time. Any changes will be posted on this page with an updated revision date.
+
+CONTACT US
+----------
+If you have questions about this privacy policy, please contact us at:
+[YOUR EMAIL ADDRESS]
+
+YOUR CONSENT
+------------
+By using the App, you consent to this privacy policy.
