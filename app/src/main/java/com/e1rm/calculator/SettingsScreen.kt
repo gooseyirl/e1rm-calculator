@@ -16,8 +16,10 @@ import androidx.compose.ui.unit.sp
 fun SettingsScreen(
     units: String = "kg",
     rounding: String = "default_0_5",
+    theme: String = "system",
     onUnitsChanged: (String) -> Unit = {},
     onRoundingChanged: (String) -> Unit = {},
+    onThemeChanged: (String) -> Unit = {},
     onNavigateBack: () -> Unit
 ) {
     BackHandler { onNavigateBack() }
@@ -56,6 +58,21 @@ fun SettingsScreen(
             )
 
             Spacer(modifier = Modifier.height(32.dp))
+
+            // ── Appearance ───────────────────────────────────────────────
+            Text("Appearance", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                listOf("system" to "System", "light" to "Light", "dark" to "Dark").forEach { (value, label) ->
+                    FilterChip(
+                        selected = theme == value,
+                        onClick = { onThemeChanged(value) },
+                        label = { Text(label) }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(28.dp))
 
             // ── Units ────────────────────────────────────────────────────
             Text("Units of Measurement", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)

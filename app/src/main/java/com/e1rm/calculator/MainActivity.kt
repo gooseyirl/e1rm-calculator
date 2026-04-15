@@ -22,6 +22,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -61,7 +62,12 @@ class MainActivity : ComponentActivity() {
         val billingManager = BillingManager(this) { onDonatedCallback?.invoke() }
         billingManager.connect()
         setContent {
-            E1RMCalculatorTheme {
+            var theme by remember { mutableStateOf(prefs.getString("theme", "system") ?: "system") }
+            val onThemeChanged: (String) -> Unit = { value ->
+                theme = value
+                prefs.edit().putString("theme", value).apply()
+            }
+            E1RMCalculatorTheme(themePreference = theme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -95,8 +101,10 @@ class MainActivity : ComponentActivity() {
                         "settings" -> SettingsScreen(
                             units = units,
                             rounding = rounding,
+                            theme = theme,
                             onUnitsChanged = onUnitsChanged,
                             onRoundingChanged = onRoundingChanged,
+                            onThemeChanged = onThemeChanged,
                             onNavigateBack = { currentScreen = "main" }
                         )
                         else -> OneRepMaxScreen(
@@ -126,13 +134,17 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun E1RMCalculatorTheme(content: @Composable () -> Unit) {
+fun E1RMCalculatorTheme(
+    themePreference: String = "system",
+    content: @Composable () -> Unit
+) {
+    val darkTheme = when (themePreference) {
+        "dark"  -> true
+        "light" -> false
+        else    -> isSystemInDarkTheme()
+    }
     MaterialTheme(
-        colorScheme = lightColorScheme(
-            primary = MaterialTheme.colorScheme.primary,
-            secondary = MaterialTheme.colorScheme.secondary,
-            background = MaterialTheme.colorScheme.background
-        ),
+        colorScheme = if (darkTheme) darkColorScheme() else lightColorScheme(),
         content = content
     )
 }
