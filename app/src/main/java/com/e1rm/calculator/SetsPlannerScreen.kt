@@ -427,7 +427,8 @@ fun SetsPlannerScreen(
 
             OutlinedButton(
                 onClick = {
-                    sets = sets + SetConfig(id = nextId)
+                    val last = sets.last()
+                    sets = sets + last.copy(id = nextId)
                     nextId++
                 },
                 modifier = Modifier.fillMaxWidth()
