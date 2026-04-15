@@ -151,6 +151,7 @@ fun SetsPlannerScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 24.dp)
+                .imePadding()
                 .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -430,6 +431,9 @@ fun SetsPlannerScreen(
                     val last = sets.last()
                     sets = sets + last.copy(id = nextId)
                     nextId++
+                    coroutineScope.launch {
+                        scrollState.animateScrollTo(scrollState.maxValue)
+                    }
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
