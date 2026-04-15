@@ -69,7 +69,7 @@ class MainActivity : ComponentActivity() {
                     var currentScreen by remember { mutableStateOf("main") }
                     // Hoisted so values survive navigation to settings / sets planner and back
                     var calcWeight by remember { mutableStateOf("") }
-                    var calcReps by remember { mutableStateOf("") }
+                    var calcReps by remember { mutableStateOf("1") }
                     var calcRpe by remember { mutableStateOf(10.0) }
                     var calcMax by remember { mutableStateOf<Double?>(null) }
                     var calcCustomPct by remember { mutableStateOf("") }
